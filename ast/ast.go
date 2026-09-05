@@ -3,7 +3,7 @@ package ast
 import "monke/token"
 
 type Node interface {
-	TokenLietral() string
+	TokenLiteral() string
 }
 
 type Statement interface {
@@ -22,7 +22,7 @@ type Program struct {
 
 func (p *Program) TokenLietral() string {
 	if len(p.Statements) > 0 {
-		return p.Statements[0].TokenLietral()
+		return p.Statements[0].TokenLiteral()
 	} else {
 		return ""
 	}
@@ -35,7 +35,7 @@ type LetStatement struct {
 }
 
 func (ls *LetStatement) statementNode()       {}
-func (ls *LetStatement) TokenLietral() string { return ls.Token.Literal }
+func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
 type Identifier struct {
 	Token token.Token
@@ -43,4 +43,4 @@ type Identifier struct {
 }
 
 func (ls *Identifier) expressionNode()      {}
-func (ls *Identifier) TokenLietral() string { return ls.Token.Literal }
+func (ls *Identifier) TokenLiteral() string { return ls.Token.Literal }
