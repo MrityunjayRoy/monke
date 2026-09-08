@@ -14,7 +14,15 @@ type Parser struct {
 	peekToken token.Token
 
 	errors []string
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	inflixParseFns map[token.TokenType]inflixParseFn
 }
+
+type (
+	prefixParseFn func() ast.Expression
+	inflixParseFn func(ast.Expression) ast.Expression
+)
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
@@ -52,7 +60,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -113,4 +121,12 @@ func (p *Parser) Errors() []string {
 func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected token to be %s, got %s instead", t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) registerPrefix(tt token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tt] = fn
+}
+
+func (p *Parser) registerInflix(tt token.TokenType, fn inflixParseFn) {
+	p.inflixParseFns[tt] = fn
 }
