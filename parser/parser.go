@@ -5,6 +5,18 @@ import (
 	"monke/ast"
 	"monke/lexer"
 	"monke/token"
+	"strconv"
+)
+
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	LESSGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
 )
 
 type Parser struct {
@@ -29,6 +41,13 @@ func New(l *lexer.Lexer) *Parser {
 		l:      l,
 		errors: []string{},
 	}
+
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+
+	p.nextToken()
+	p.nextToken()
 
 	return p
 }
@@ -97,6 +116,18 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) currTokenIs(t token.TokenType) bool {
 	return p.currToken.Type == t
 }
@@ -129,4 +160,31 @@ func (p *Parser) registerPrefix(tt token.TokenType, fn prefixParseFn) {
 
 func (p *Parser) registerInflix(tt token.TokenType, fn inflixParseFn) {
 	p.inflixParseFns[tt] = fn
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.currToken}
+
+	value, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
+		p.errors = append(p.errors, msg)
+	}
+
+	lit.Value = value
+	return lit
 }
